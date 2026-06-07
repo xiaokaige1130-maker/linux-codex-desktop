@@ -44,6 +44,13 @@ Then build or run the upstream wrapper:
 ./scripts/run-upstream-app.sh
 ```
 
+`build-upstream-app.sh` reuses the cached DMG by default. If a completely fresh upstream download is needed, run this inside the submodule:
+
+```bash
+cd upstream/codex-desktop-linux
+PATH="$HOME/.cargo/bin:$PATH" CODEX_LINUX_ENABLE_COMPUTER_USE_UI=1 make build-app-fresh
+```
+
 For native package install:
 
 ```bash

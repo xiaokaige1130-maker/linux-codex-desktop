@@ -38,6 +38,14 @@ Fallback stack:
 4. X11 tools such as `xdotool`, `wmctrl`, and screenshot tools.
 5. Playwright/CDP for browser tasks.
 
+Current host status:
+
+- Ubuntu 24.04 on X11/GNOME.
+- Linux Computer Use backend builds with Rust stable 1.96 through rustup.
+- `doctor` reports Computer Use ready after enabling AT-SPI and installing the GNOME window targeting extension.
+- `/dev/uinput` is configured as `root:input 0660`; a new login session is still recommended so desktop apps inherit the `input` group.
+- The GNOME extension was installed at `~/.local/share/gnome-shell/extensions/codex-window-control@openai.com`.
+
 ## Phase 4: Plugin Compatibility
 
 Expose or generate MCP configuration for:

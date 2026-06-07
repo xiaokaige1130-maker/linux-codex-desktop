@@ -8,7 +8,7 @@ URL="https://github.com/ilysenko/codex-desktop-linux.git"
 
 mkdir -p "$ROOT/upstream"
 
-if [ -d "$UPSTREAM_DIR/.git" ]; then
+if [ -e "$UPSTREAM_DIR/.git" ]; then
   git -C "$UPSTREAM_DIR" pull --ff-only
 elif [ -d "$SOURCE_SIBLING/.git" ]; then
   git clone "$SOURCE_SIBLING" "$UPSTREAM_DIR"
