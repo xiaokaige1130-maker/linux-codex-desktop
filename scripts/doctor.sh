@@ -118,6 +118,29 @@ else
   printf 'fix  ./scripts/enable-computer-use-ui.sh\n'
 fi
 
+section "Desktop App"
+USER_DESKTOP_FILE="$HOME/.local/share/applications/codex-desktop.desktop"
+USER_ICON_FILE="$HOME/.local/share/icons/hicolor/256x256/apps/codex-desktop.png"
+USER_BIN_FILE="$HOME/.local/bin/codex-desktop"
+if [ -f "$USER_DESKTOP_FILE" ]; then
+  ok "desktop launcher installed -> $USER_DESKTOP_FILE"
+else
+  warn "desktop launcher is not installed"
+  printf 'fix  ./scripts/install-desktop-app.sh\n'
+fi
+if [ -f "$USER_ICON_FILE" ]; then
+  ok "desktop icon installed -> $USER_ICON_FILE"
+else
+  warn "desktop icon is not installed"
+  printf 'fix  ./scripts/install-desktop-app.sh\n'
+fi
+if [ -x "$USER_BIN_FILE" ]; then
+  ok "desktop command installed -> $USER_BIN_FILE"
+else
+  warn "desktop command is not installed"
+  printf 'fix  ./scripts/install-desktop-app.sh\n'
+fi
+
 section "Publish Safety"
 if git -C "$ROOT" check-ignore --no-index -q "upstream/codex-desktop-linux/Codex.dmg"; then
   ok "parent repo ignores upstream/codex-desktop-linux/Codex.dmg"

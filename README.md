@@ -83,6 +83,26 @@
 ./scripts/run-upstream-app.sh
 ```
 
+安装成真正的桌面应用：
+
+```bash
+./scripts/install-desktop-app.sh
+```
+
+安装后会写入：
+
+```text
+~/.local/share/applications/codex-desktop.desktop
+~/.local/share/icons/hicolor/256x256/apps/codex-desktop.png
+~/.local/bin/codex-desktop
+```
+
+之后可以从系统应用菜单搜索 `Codex Desktop` / `Codex 桌面版` 启动，也可以运行：
+
+```bash
+gtk-launch codex-desktop
+```
+
 ## 中文和语言切换
 
 本项目提供一个小脚本修改本地 Codex Desktop 设置文件：
@@ -192,6 +212,7 @@
 | `scripts/bootstrap-upstream.sh` | 准备 upstream checkout/submodule |
 | `scripts/build-upstream-app.sh` | 构建生成 Linux Electron app |
 | `scripts/run-upstream-app.sh` | 运行生成后的 app |
+| `scripts/install-desktop-app.sh` | 安装用户级桌面应用入口和 Codex 图标 |
 | `scripts/enable-computer-use-ui.sh` | 启用 Linux Computer Use UI |
 | `scripts/set-language.sh` | 设置中文、英文或自动检测语言 |
 
