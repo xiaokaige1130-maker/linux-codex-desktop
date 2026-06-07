@@ -103,6 +103,16 @@
 gtk-launch codex-desktop
 ```
 
+如果图标没有马上刷新，关掉当前 Codex 窗口后从应用菜单重新打开。安装脚本使用图标绝对路径，避免 GNOME 图标主题缓存继续显示 fallback 齿轮图标。
+
+卸载用户级桌面入口：
+
+```bash
+./scripts/uninstall-desktop-app.sh
+```
+
+卸载脚本只删除 `~/.local/share/applications/codex-desktop.desktop`、`~/.local/share/icons/hicolor/256x256/apps/codex-desktop.png` 和 `~/.local/bin/codex-desktop`，不会删除生成后的 `codex-app/`。
+
 ## 中文和语言切换
 
 本项目提供一个小脚本修改本地 Codex Desktop 设置文件：
@@ -213,6 +223,7 @@ gtk-launch codex-desktop
 | `scripts/build-upstream-app.sh` | 构建生成 Linux Electron app |
 | `scripts/run-upstream-app.sh` | 运行生成后的 app |
 | `scripts/install-desktop-app.sh` | 安装用户级桌面应用入口和 Codex 图标 |
+| `scripts/uninstall-desktop-app.sh` | 删除用户级桌面应用入口、图标和命令 |
 | `scripts/enable-computer-use-ui.sh` | 启用 Linux Computer Use UI |
 | `scripts/set-language.sh` | 设置中文、英文或自动检测语言 |
 
