@@ -1,0 +1,38 @@
+Linux Codex Desktop 集成工作区 NOTICE
+=====================================
+
+本仓库是非官方 Linux Codex Desktop 集成工作区。
+
+本仓库不分发：
+
+- OpenAI Codex Desktop 官方二进制
+- 生成后的应用目录
+- 下载得到的 DMG
+- `.deb`、`.rpm`、`.pkg.tar.zst`、`.AppImage` 等安装包
+
+## Upstream 和组件来源
+
+### codex-desktop-linux
+
+- URL: https://github.com/ilysenko/codex-desktop-linux
+- License: MIT
+- 作用：主要 Linux wrapper。负责把上游 macOS Codex Desktop app 转换成可运行的 Linux Electron app，并提供 Linux 打包、启动、更新和 Computer Use 相关基础能力。
+
+### OpenAI Codex Desktop
+
+- URL: https://openai.com/codex/
+- 作用：本项目尝试在 Linux 上接近的上游桌面体验。
+- 说明：本集成项目不是 OpenAI 官方项目，也未获得 OpenAI 背书。
+
+## 发布边界
+
+请不要把以下内容提交或发布到本仓库：
+
+- `upstream/codex-desktop-linux/Codex.dmg`
+- `upstream/codex-desktop-linux/Codex.dmg.metadata`
+- `upstream/codex-desktop-linux/codex-app/`
+- `upstream/codex-desktop-linux/dist/`
+- `upstream/codex-desktop-linux/target/`
+- 任何原生安装包或 AppImage
+
+本仓库的 MIT License 只覆盖本仓库中的集成脚本、文档和自制图示，不覆盖上游官方应用二进制或第三方项目内容。

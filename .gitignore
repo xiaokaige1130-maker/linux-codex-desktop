@@ -3,4 +3,14 @@ upstream/codex-desktop-linux/codex-app-next/
 upstream/codex-desktop-linux/dist/
 upstream/codex-desktop-linux/dist-next/
 upstream/codex-desktop-linux/Codex.dmg
+upstream/codex-desktop-linux/Codex.dmg.metadata
+upstream/codex-desktop-linux/*.AppImage
+upstream/codex-desktop-linux/*.deb
+upstream/codex-desktop-linux/*.rpm
+upstream/codex-desktop-linux/*.pkg.tar.zst
+upstream/codex-desktop-linux/target/
+*.AppImage
+*.deb
+*.rpm
+*.pkg.tar.zst
 *.log

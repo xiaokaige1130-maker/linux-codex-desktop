@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="420" viewBox="0 0 1100 420" role="img" aria-labelledby="title desc">
+  <title id="title">Linux Codex Desktop 构建流程</title>
+  <desc id="desc">展示从环境检查到运行本地应用的构建流程。</desc>
+  <defs>
+    <style>
+      .bg{fill:#f8fafc}
+      .step{fill:#ffffff;stroke:#b8c3d4;stroke-width:2}
+      .safe{fill:#eef8f1;stroke:#4a9a5a;stroke-width:2}
+      .text{font-family:Arial,'Noto Sans CJK SC',sans-serif;font-size:17px;fill:#1f2937}
+      .small{font-family:Arial,'Noto Sans CJK SC',sans-serif;font-size:13px;fill:#4b5563}
+      .title{font-family:Arial,'Noto Sans CJK SC',sans-serif;font-size:24px;font-weight:700;fill:#111827}
+      .arrow{stroke:#64748b;stroke-width:2.5;fill:none;marker-end:url(#arrow)}
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1100" height="420"/>
+  <text class="title" x="40" y="50">本地构建流程</text>
+  <rect class="step" x="45" y="95" width="160" height="95" rx="10"/>
+  <text class="text" x="70" y="132">1. 诊断</text>
+  <text class="small" x="70" y="160">doctor.sh</text>
+  <rect class="step" x="245" y="95" width="160" height="95" rx="10"/>
+  <text class="text" x="270" y="132">2. 配置输入</text>
+  <text class="small" x="270" y="160">uinput / input</text>
+  <rect class="step" x="445" y="95" width="160" height="95" rx="10"/>
+  <text class="text" x="470" y="132">3. 拉取 upstream</text>
+  <text class="small" x="470" y="160">bootstrap</text>
+  <rect class="step" x="645" y="95" width="160" height="95" rx="10"/>
+  <text class="text" x="670" y="132">4. 本机转换</text>
+  <text class="small" x="670" y="160">DMG -> app</text>
+  <rect class="step" x="845" y="95" width="160" height="95" rx="10"/>
+  <text class="text" x="870" y="132">5. 运行测试</text>
+  <text class="small" x="870" y="160">run-upstream</text>
+  <path class="arrow" d="M205 142 H245"/>
+  <path class="arrow" d="M405 142 H445"/>
+  <path class="arrow" d="M605 142 H645"/>
+  <path class="arrow" d="M805 142 H845"/>
+  <rect class="safe" x="245" y="270" width="560" height="80" rx="10"/>
+  <text class="text" x="275" y="306">发布仓库只保留脚本、文档和 submodule 指针</text>
+  <text class="small" x="275" y="331">DMG、codex-app、dist 和安装包保持本地忽略，不推送到 GitHub</text>
+  <path class="arrow" d="M525 190 V270"/>
+</svg>

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="520" viewBox="0 0 1100 520" role="img" aria-labelledby="title desc">
+  <title id="title">Linux Codex Desktop 集成架构</title>
+  <desc id="desc">展示本集成仓库、上游 wrapper、官方桌面应用资源和 Linux 桌面能力之间的关系。</desc>
+  <defs>
+    <style>
+      .bg{fill:#f7f8fb}
+      .panel{fill:#fff;stroke:#c9d2df;stroke-width:2}
+      .primary{fill:#e8f3ff;stroke:#3981c7;stroke-width:2}
+      .accent{fill:#edf7ee;stroke:#4d9a57;stroke-width:2}
+      .warn{fill:#fff4df;stroke:#d3912f;stroke-width:2}
+      .text{font-family:Arial,'Noto Sans CJK SC',sans-serif;font-size:18px;fill:#1c2430}
+      .small{font-family:Arial,'Noto Sans CJK SC',sans-serif;font-size:14px;fill:#405066}
+      .title{font-family:Arial,'Noto Sans CJK SC',sans-serif;font-size:24px;font-weight:700;fill:#111827}
+      .arrow{stroke:#556579;stroke-width:2.5;fill:none;marker-end:url(#arrow)}
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#556579"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1100" height="520" rx="0"/>
+  <text class="title" x="40" y="52">Linux Codex Desktop 集成架构</text>
+  <rect class="primary" x="40" y="95" width="270" height="145" rx="10"/>
+  <text class="text" x="65" y="132">本集成仓库</text>
+  <text class="small" x="65" y="164">README / NOTICE</text>
+  <text class="small" x="65" y="188">doctor / language 脚本</text>
+  <text class="small" x="65" y="212">本地 Linux 配置</text>
+  <rect class="panel" x="400" y="95" width="280" height="145" rx="10"/>
+  <text class="text" x="425" y="132">codex-desktop-linux</text>
+  <text class="small" x="425" y="164">DMG 下载与转换</text>
+  <text class="small" x="425" y="188">Electron Linux wrapper</text>
+  <text class="small" x="425" y="212">打包与 Computer Use</text>
+  <rect class="warn" x="770" y="95" width="250" height="145" rx="10"/>
+  <text class="text" x="795" y="132">官方应用资源</text>
+  <text class="small" x="795" y="164">本机下载</text>
+  <text class="small" x="795" y="188">本机转换</text>
+  <text class="small" x="795" y="212">不提交到仓库</text>
+  <rect class="accent" x="215" y="330" width="310" height="130" rx="10"/>
+  <text class="text" x="240" y="367">Linux 桌面能力</text>
+  <text class="small" x="240" y="399">uinput / X11 / GNOME extension</text>
+  <text class="small" x="240" y="423">窗口、截图、输入和浏览器控制</text>
+  <rect class="panel" x="655" y="330" width="300" height="130" rx="10"/>
+  <text class="text" x="680" y="367">生成后的本地应用</text>
+  <text class="small" x="680" y="399">codex-app/</text>
+  <text class="small" x="680" y="423">只在本机运行，不发布二进制</text>
+  <path class="arrow" d="M310 168 H400"/>
+  <path class="arrow" d="M680 168 H770"/>
+  <path class="arrow" d="M540 240 C540 285 485 310 420 330"/>
+  <path class="arrow" d="M680 240 C720 285 760 305 795 330"/>
+  <path class="arrow" d="M525 395 H655"/>
+</svg>
