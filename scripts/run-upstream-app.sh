@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+APP_DIR="$ROOT/upstream/codex-desktop-linux"
+
+if [ ! -x "$APP_DIR/codex-app/start.sh" ]; then
+  printf 'Generated app is missing. Run ./scripts/build-upstream-app.sh first.\n' >&2
+  exit 1
+fi
+
+cd "$APP_DIR"
+CODEX_LINUX_ENABLE_COMPUTER_USE_UI=1 make run-app

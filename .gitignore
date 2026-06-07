@@ -1,0 +1,6 @@
+upstream/codex-desktop-linux/codex-app/
+upstream/codex-desktop-linux/codex-app-next/
+upstream/codex-desktop-linux/dist/
+upstream/codex-desktop-linux/dist-next/
+upstream/codex-desktop-linux/Codex.dmg
+*.log
