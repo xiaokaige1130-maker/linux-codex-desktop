@@ -8,12 +8,16 @@ function applyCustomModelCatalogPatch(source) {
     return source;
   }
 
-  const availableModelsPattern = /availableModels:([A-Za-z_$][\w$]*),defaultModel:/;
+  const availableModelsPatterns = [
+    /availableModels:new Set\(([A-Za-z_$][\w$]*)\),defaultModel:/,
+    /availableModels:([A-Za-z_$][\w$]*),defaultModel:/,
+  ];
   if (!source.includes("availableModels") || !source.includes("useHiddenModels")) {
     return source;
   }
 
-  const availableMatch = source.match(availableModelsPattern);
+  const availableModelsPattern = availableModelsPatterns.find((pattern) => pattern.test(source));
+  const availableMatch = availableModelsPattern == null ? null : source.match(availableModelsPattern);
   if (!availableMatch) {
     if (modelIds.every((modelId) => source.includes(modelId))) {
       return `${`var ${marker}=${JSON.stringify(modelIds)};`}${source}`;
