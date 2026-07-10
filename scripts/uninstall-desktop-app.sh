@@ -5,9 +5,21 @@ APP_ID="codex-desktop"
 DESKTOP_FILE="$HOME/.local/share/applications/$APP_ID.desktop"
 ICON_TARGET="$HOME/.local/share/icons/hicolor/256x256/apps/$APP_ID.png"
 BIN_TARGET="$HOME/.local/bin/$APP_ID"
+SERVICE_NAME="codex-desktop-workspace-restore.service"
+SERVICE_FILE="$HOME/.config/systemd/user/$SERVICE_NAME"
+PATH_NAME="codex-desktop-workspace-restore.path"
+PATH_FILE="$HOME/.config/systemd/user/$PATH_NAME"
+BACKUP_ON_EXIT_NAME="codex-desktop-backup-on-exit.service"
+BACKUP_ON_EXIT_FILE="$HOME/.config/systemd/user/$BACKUP_ON_EXIT_NAME"
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl --user disable --now "$BACKUP_ON_EXIT_NAME" >/dev/null 2>&1 || true
+  systemctl --user disable --now "$PATH_NAME" >/dev/null 2>&1 || true
+  systemctl --user disable --now "$SERVICE_NAME" >/dev/null 2>&1 || true
+fi
 
 removed=0
-for path in "$DESKTOP_FILE" "$ICON_TARGET" "$BIN_TARGET"; do
+for path in "$DESKTOP_FILE" "$ICON_TARGET" "$BIN_TARGET" "$SERVICE_FILE" "$PATH_FILE" "$BACKUP_ON_EXIT_FILE"; do
   if [ -e "$path" ]; then
     rm -f "$path"
     printf 'removed %s\n' "$path"
@@ -21,6 +33,10 @@ fi
 
 if command -v gtk-update-icon-cache >/dev/null 2>&1; then
   gtk-update-icon-cache -q "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl --user daemon-reload >/dev/null 2>&1 || true
 fi
 
 if [ "$removed" -eq 0 ]; then

@@ -95,6 +95,8 @@
 ~/.local/share/applications/codex-desktop.desktop
 ~/.local/share/icons/hicolor/256x256/apps/codex-desktop.png
 ~/.local/bin/codex-desktop
+~/.config/systemd/user/codex-desktop-workspace-restore.service
+~/.config/systemd/user/codex-desktop-workspace-restore.path
 ```
 
 之后可以从系统应用菜单搜索 `Codex Desktop` / `Codex 桌面版` 启动，也可以运行：
@@ -111,7 +113,7 @@ gtk-launch codex-desktop
 ./scripts/uninstall-desktop-app.sh
 ```
 
-卸载脚本只删除 `~/.local/share/applications/codex-desktop.desktop`、`~/.local/share/icons/hicolor/256x256/apps/codex-desktop.png` 和 `~/.local/bin/codex-desktop`，不会删除生成后的 `codex-app/`。
+卸载脚本只删除用户级桌面入口、图标、命令和 workspace restore systemd 单元，不会删除生成后的 `codex-app/`。
 
 ## 中文和语言切换
 
@@ -172,6 +174,154 @@ gtk-launch codex-desktop
 ./scripts/doctor.sh
 ```
 
+## 项目记忆和会话索引
+
+本项目提供一个本地项目记忆脚本，用来识别项目技术栈、包管理器、常用命令，并把结果持久化到本机 SQLite 数据库：
+
+```bash
+./scripts/project-memory.js scan /path/to/project
+```
+
+默认数据库位置：
+
+```text
+~/.local/state/linux-codex-desktop/project-memory.sqlite
+```
+
+常用命令：
+
+```bash
+./scripts/project-memory.js scan /home/hyk/linux-codex-desktop
+./scripts/project-memory.js refresh /home/hyk/linux-codex-desktop
+./scripts/project-memory.js refresh --all
+./scripts/project-memory.js show /home/hyk/linux-codex-desktop
+./scripts/project-memory.js threads /home/hyk/linux-codex-desktop
+./scripts/project-memory.js summaries /home/hyk/linux-codex-desktop
+./scripts/project-memory.js snapshot /home/hyk/linux-codex-desktop
+./scripts/project-memory.js workspace status /home/hyk/linux-codex-desktop
+./scripts/project-memory.js workspace register /home/hyk/linux-codex-desktop
+./scripts/project-memory.js backup
+./scripts/project-memory.js backup --keep 20
+./scripts/project-memory.js backup list
+./scripts/project-memory.js backup verify
+./scripts/project-memory.js backup prune-global-state --keep 20
+./scripts/project-memory.js list
+./scripts/project-memory.js pref init /home/hyk/linux-codex-desktop
+./scripts/project-memory.js persistence mark /home/hyk/linux-codex-desktop
+./scripts/project-memory.js persistence check /home/hyk/linux-codex-desktop
+./scripts/project-memory.js export-context /home/hyk/linux-codex-desktop
+./scripts/test-restart-persistence.sh mark /home/hyk/linux-codex-desktop
+./scripts/test-restart-persistence.sh check /home/hyk/linux-codex-desktop
+```
+
+运行完整持久化自检：
+
+```bash
+./scripts/verify-project-memory.sh /home/hyk/linux-codex-desktop
+```
+
+该脚本会扫描项目、验证项目记忆库、导出会话快照，并模拟 `~/.codex/.codex-global-state.json` 被覆盖回 `/home/hyk` 后能否由 systemd watcher 自动恢复项目工作区。
+
+按项目保存本地偏好：
+
+```bash
+./scripts/project-memory.js pref init /home/hyk/linux-codex-desktop
+./scripts/project-memory.js pref set /home/hyk/linux-codex-desktop language zh-CN
+./scripts/project-memory.js pref get /home/hyk/linux-codex-desktop language
+./scripts/project-memory.js pref list /home/hyk/linux-codex-desktop
+```
+
+`scan` 会自动初始化默认偏好；`pref init` 可以手动补齐缺失的默认项，但不会覆盖你已经改过的值。当前默认会记录语言、桌面控制后端、workspace restore/watch 开关，以及识别到的常用项目命令。
+
+当前支持识别：
+
+- Node / JavaScript / TypeScript：`package.json`、`pnpm-lock.yaml`、`yarn.lock`、`package-lock.json`、`bun.lock`
+- Python：`pyproject.toml`、`requirements.txt`、`uv.lock`、`poetry.lock`
+- Rust：`Cargo.toml`
+- Go：`go.mod`
+- Makefile：`Makefile` / `makefile` / `GNUmakefile` 中的 `dev`、`test`、`build`、`lint` 等目标
+- 通用 Linux 桌面集成仓库：`scripts/`、`README.md`、`LICENSE`、`NOTICE`、`docs/`
+
+`export-context` 会输出项目根目录、Git 状态、识别到的技术栈和命令、本地偏好、Codex workspace 持久化状态，以及已有的项目会话和摘要索引，方便后续首次启动向导或恢复界面直接复用。
+
+`scan` 会自动把项目根目录注册进 Codex Desktop 的工作区状态：
+
+```text
+~/.codex/.codex-global-state.json
+```
+
+写入前会自动生成一份 `.bak-时间戳` 备份。它只会把项目路径追加到 `electron-saved-workspace-roots` 和 `active-workspace-roots`，不会删除原有工作区。注册后建议重启 Codex Desktop，让左侧会话列表按新的工作区状态刷新。
+
+本仓库的启动脚本会在打开 Codex Desktop 前同步执行一次轻量的 workspace restore，并在后台自动执行：
+
+```bash
+./scripts/project-memory.js refresh --all
+```
+
+这会重扫已记住项目、同步 Codex 会话索引和摘要索引、补齐默认偏好，并恢复 workspace roots。运行中的桌面端如果再次覆盖全局状态，用户级 systemd `.path` 单元会立即触发轻量 restore，因此启动脚本不再额外运行 60 秒轮询。用户级桌面入口由 `./scripts/install-desktop-app.sh` 生成；如果更新过启动逻辑，需要重新运行一次安装脚本。
+
+启动、登录恢复和退出备份都会通过 `scripts/project-memory-log.sh` 记录 hook 日志：
+
+```text
+~/.local/state/linux-codex-desktop/logs/project-memory-hooks.log
+```
+
+日志默认超过 1 MiB 时会保留最近 500 行，避免长期运行后无限增长。可以通过 `CODEX_PROJECT_MEMORY_LOG_MAX_BYTES` 和 `CODEX_PROJECT_MEMORY_LOG_KEEP_LINES` 调整。
+
+安装桌面入口时还会安装一个用户级 systemd 服务：
+
+```text
+~/.config/systemd/user/codex-desktop-workspace-restore.service
+~/.config/systemd/user/codex-desktop-workspace-restore.path
+~/.config/systemd/user/codex-desktop-backup-on-exit.service
+```
+
+恢复服务在用户登录和全局状态变化时只执行一次轻量 `workspace restore`。`.path` 监听单元会监控 `~/.codex/.codex-global-state.json`，如果运行中的桌面端把工作区状态写回 `/home/hyk`，它会触发恢复服务。全量项目索引刷新在桌面启动后后台执行，退出备份服务则在用户会话停止时通过 `ExecStop` 保存会话库、记忆库和 workspace 状态。这样可以恢复项目根目录，同时避免每次状态写入都触发完整备份和多轮扫描。
+
+备份位置：
+
+```text
+~/.local/state/linux-codex-desktop/backups/
+```
+
+每份备份包含 `state_5.sqlite`、`memories_1.sqlite`、`.codex-global-state.json`、项目记忆库和 `manifest.json`。
+
+默认只保留最近 20 份备份，避免 systemd watcher 频繁触发后长期占用磁盘。可以用 `--keep` 调整保留数量。
+
+工作区注册产生的轻量 `.codex-global-state.json.bak-*` 也只保留最近 20 份。升级旧版本后可以执行 `backup prune-global-state --keep 20` 清理历史遗留文件，不影响完整会话备份目录。
+
+`backup list` 会列出已有备份，`backup verify` 会只读校验最新备份里的 Codex 线程库、全局状态和项目记忆库是否可打开。
+
+脚本会读取 `~/.codex/state_5.sqlite` 中已有的 Codex 会话元数据，按项目路径、Git remote 和项目关键词建立索引；如果会话是从 `/home/hyk` 这类上层目录打开的，只要标题、预览或首条消息能匹配项目关键词，也会被归入项目记忆。如果 `~/.codex/memories_1.sqlite` 里已有 Codex 自动生成的会话摘要，也会同步一份索引。它不会修改 Codex 原始会话库，只会把项目、偏好、工作区注册状态、会话索引和摘要索引写入自己的项目记忆库。这样关机重启后，可以通过项目路径重新看到相关会话和项目上下文。
+
+如果担心左侧会话列表刷新异常，可以导出一份只读会话快照：
+
+```bash
+./scripts/project-memory.js snapshot /home/hyk/linux-codex-desktop
+```
+
+快照会写入：
+
+```text
+~/.local/state/linux-codex-desktop/snapshots/
+```
+
+快照包含当前 Codex 会话元数据总数、当前项目匹配的会话、最近会话列表和工作区注册状态。它用于排查和恢复索引，不包含对 Codex 原始会话库的写操作。
+
+真实注销或重启前，可以先写入一份持久化基线：
+
+```bash
+./scripts/test-restart-persistence.sh mark /home/hyk/linux-codex-desktop
+```
+
+重新登录并打开 Codex Desktop 后，再执行：
+
+```bash
+./scripts/test-restart-persistence.sh check /home/hyk/linux-codex-desktop
+```
+
+该检查会比对项目记忆、workspace saved/active 状态、项目会话索引数量，以及重启前写入的备份是否仍可校验。它用于把“左侧会话是否丢了”的底层状态变成可重复检查的证据。
+
 ## 构建流程
 
 ![构建流程](docs/images/build-flow.svg)
@@ -187,6 +337,8 @@ gtk-launch codex-desktop
 7. 生成 `codex-app/`。
 8. 本地运行或继续生成安装包。
 
+本机自定义模型选择器补丁由 `linux-features/custom-model-catalog/` 管理，`scripts/build-upstream-app.sh` 会通过 upstream 的 Linux feature patch loader 应用它。这样重新构建生成应用时不会丢失 GPT-5.6 模型 allowlist，也不会把 provider URL 或 API 凭据写入补丁源码。
+
 ## 目录结构
 
 ```text
@@ -200,11 +352,16 @@ gtk-launch codex-desktop
 │   ├── bootstrap-upstream.sh
 │   ├── build-upstream-app.sh
 │   ├── check-host.sh
+│   ├── collect-persistence-report.sh
 │   ├── configure-linux-input.sh
 │   ├── doctor.sh
 │   ├── enable-computer-use-ui.sh
+│   ├── project-memory.js
+│   ├── project-memory-log.sh
 │   ├── run-upstream-app.sh
-│   └── set-language.sh
+│   ├── set-language.sh
+│   ├── test-restart-persistence.sh
+│   └── verify-project-memory.sh
 ├── upstream/
 │   └── codex-desktop-linux
 ├── LICENSE
@@ -218,6 +375,7 @@ gtk-launch codex-desktop
 |---|---|
 | `scripts/doctor.sh` | 本机环境、依赖、Computer Use 和发布安全检查 |
 | `scripts/check-host.sh` | 兼容入口，实际调用 `doctor.sh` |
+| `scripts/collect-persistence-report.sh` | 汇总项目记忆、workspace、备份、systemd 和 hook 日志报告 |
 | `scripts/configure-linux-input.sh` | 配置 `/dev/uinput` 和 `input` 用户组 |
 | `scripts/bootstrap-upstream.sh` | 准备 upstream checkout/submodule |
 | `scripts/build-upstream-app.sh` | 构建生成 Linux Electron app |
@@ -226,6 +384,10 @@ gtk-launch codex-desktop
 | `scripts/uninstall-desktop-app.sh` | 删除用户级桌面应用入口、图标和命令 |
 | `scripts/enable-computer-use-ui.sh` | 启用 Linux Computer Use UI |
 | `scripts/set-language.sh` | 设置中文、英文或自动检测语言 |
+| `scripts/project-memory.js` | 扫描项目技术栈、命令和 Codex 会话索引 |
+| `scripts/project-memory-log.sh` | 为启动、登录恢复和退出备份 hook 记录日志 |
+| `scripts/test-restart-persistence.sh` | 真实注销/重启前后写入和检查项目记忆持久化基线 |
+| `scripts/verify-project-memory.sh` | 验证项目记忆、workspace restore 和 systemd watcher |
 
 ## 发布安全
 
@@ -254,8 +416,8 @@ git ls-files
 ## 后续优化方向
 
 - 验证 `.deb` / `.rpm` / AppImage 打包和安装。
-- 增加项目记忆、会话摘要和本地偏好持久化。
-- 自动识别项目技术栈、包管理器、测试命令。
+- 把项目记忆接入图形化首次启动向导和主界面。
+- 增加会话摘要生成和项目偏好编辑界面。
 - 生成 MCP/plugin 配置。
 - 增强 X11/Wayland 桌面控制兜底。
 - 补充更多发行版测试记录。
