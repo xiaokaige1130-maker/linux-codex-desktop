@@ -204,6 +204,7 @@ gtk-launch codex-desktop
 ./scripts/project-memory.js backup --keep 20
 ./scripts/project-memory.js backup list
 ./scripts/project-memory.js backup verify
+./scripts/project-memory.js backup prune-global-state --keep 20
 ./scripts/project-memory.js list
 ./scripts/project-memory.js pref init /home/hyk/linux-codex-desktop
 ./scripts/project-memory.js persistence mark /home/hyk/linux-codex-desktop
@@ -251,19 +252,13 @@ gtk-launch codex-desktop
 
 写入前会自动生成一份 `.bak-时间戳` 备份。它只会把项目路径追加到 `electron-saved-workspace-roots` 和 `active-workspace-roots`，不会删除原有工作区。注册后建议重启 Codex Desktop，让左侧会话列表按新的工作区状态刷新。
 
-本仓库的启动脚本会在打开 Codex Desktop 前自动执行：
+本仓库的启动脚本会在打开 Codex Desktop 前同步执行一次轻量的 workspace restore，并在后台自动执行：
 
 ```bash
 ./scripts/project-memory.js refresh --all
 ```
 
-这会重扫已记住项目、同步 Codex 会话索引和摘要索引、补齐默认偏好，并恢复 workspace roots。如果刷新失败，会退回执行 `workspace restore`。启动后还会后台执行 60 秒：
-
-```bash
-./scripts/project-memory.js workspace watch --duration 60 --interval 2
-```
-
-这会把项目记忆库里已记住的项目根目录重新写回 Codex Desktop 工作区状态。这样即使运行中的桌面端在启动阶段把全局状态临时写回 `/home/hyk`，从 `./scripts/run-upstream-app.sh` 或系统应用菜单启动时，也会在启动前和启动后的短时间内恢复项目工作区。用户级桌面入口由 `./scripts/install-desktop-app.sh` 生成；如果更新过启动逻辑，需要重新运行一次安装脚本。
+这会重扫已记住项目、同步 Codex 会话索引和摘要索引、补齐默认偏好，并恢复 workspace roots。运行中的桌面端如果再次覆盖全局状态，用户级 systemd `.path` 单元会立即触发轻量 restore，因此启动脚本不再额外运行 60 秒轮询。用户级桌面入口由 `./scripts/install-desktop-app.sh` 生成；如果更新过启动逻辑，需要重新运行一次安装脚本。
 
 启动、登录恢复和退出备份都会通过 `scripts/project-memory-log.sh` 记录 hook 日志：
 
@@ -281,7 +276,7 @@ gtk-launch codex-desktop
 ~/.config/systemd/user/codex-desktop-backup-on-exit.service
 ```
 
-恢复服务会在用户登录后先执行一次 `backup`，再执行 `refresh --all`、`workspace restore`、`persistence check` 和短时间 `workspace watch`。`.path` 监听单元会监控 `~/.codex/.codex-global-state.json`，如果运行中的桌面端把工作区状态写回 `/home/hyk`，它会自动触发恢复服务。退出备份服务会在用户会话停止时通过 `ExecStop` 再做一次备份，尽量保留关机、注销前的 Codex 会话库、记忆库和 workspace 状态。这些单元不启动 Codex Desktop，只负责备份 Codex 会话/记忆/状态文件，并把已记住的项目根目录恢复到 Codex 的工作区状态，减少注销、重启或桌面端回写配置后左侧会话列表丢上下文的概率。`persistence check` 失败不会阻断恢复服务，但失败原因会写入 hook 日志，便于重启后排查。
+恢复服务在用户登录和全局状态变化时只执行一次轻量 `workspace restore`。`.path` 监听单元会监控 `~/.codex/.codex-global-state.json`，如果运行中的桌面端把工作区状态写回 `/home/hyk`，它会触发恢复服务。全量项目索引刷新在桌面启动后后台执行，退出备份服务则在用户会话停止时通过 `ExecStop` 保存会话库、记忆库和 workspace 状态。这样可以恢复项目根目录，同时避免每次状态写入都触发完整备份和多轮扫描。
 
 备份位置：
 
@@ -292,6 +287,8 @@ gtk-launch codex-desktop
 每份备份包含 `state_5.sqlite`、`memories_1.sqlite`、`.codex-global-state.json`、项目记忆库和 `manifest.json`。
 
 默认只保留最近 20 份备份，避免 systemd watcher 频繁触发后长期占用磁盘。可以用 `--keep` 调整保留数量。
+
+工作区注册产生的轻量 `.codex-global-state.json.bak-*` 也只保留最近 20 份。升级旧版本后可以执行 `backup prune-global-state --keep 20` 清理历史遗留文件，不影响完整会话备份目录。
 
 `backup list` 会列出已有备份，`backup verify` 会只读校验最新备份里的 Codex 线程库、全局状态和项目记忆库是否可打开。
 
@@ -339,6 +336,8 @@ gtk-launch codex-desktop
 6. 重建 Linux Electron 运行所需模块。
 7. 生成 `codex-app/`。
 8. 本地运行或继续生成安装包。
+
+本机自定义模型选择器补丁由 `linux-features/custom-model-catalog/` 管理，`scripts/build-upstream-app.sh` 会通过 upstream 的 Linux feature patch loader 应用它。这样重新构建生成应用时不会丢失 GPT-5.6 模型 allowlist，也不会把 provider URL 或 API 凭据写入补丁源码。
 
 ## 目录结构
 

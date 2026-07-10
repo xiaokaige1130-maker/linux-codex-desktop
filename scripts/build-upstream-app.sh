@@ -9,4 +9,8 @@ if [ ! -e "$APP_DIR/.git" ]; then
 fi
 
 cd "$APP_DIR"
-PATH="$HOME/.cargo/bin:$PATH" CODEX_LINUX_ENABLE_COMPUTER_USE_UI=1 make build-app
+PATH="$HOME/.cargo/bin:$PATH" \
+  CODEX_LINUX_ENABLE_COMPUTER_USE_UI=1 \
+  CODEX_LINUX_FEATURES_ROOT="$ROOT/linux-features" \
+  CODEX_LINUX_FEATURES_CONFIG="$ROOT/linux-features/features.json" \
+  make build-app

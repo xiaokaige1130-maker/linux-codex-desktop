@@ -39,11 +39,11 @@ cat > "$BIN_TARGET" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
 export CODEX_LINUX_ENABLE_COMPUTER_USE_UI="\${CODEX_LINUX_ENABLE_COMPUTER_USE_UI:-1}"
+export NPM_CONFIG_CACHE="\${NPM_CONFIG_CACHE:-\${XDG_CACHE_HOME:-\$HOME/.cache}/codex-desktop/npm}"
 export BAMF_DESKTOP_FILE_HINT="$DESKTOP_FILE"
 export CHROME_DESKTOP="$APP_ID.desktop"
-"$ROOT/scripts/project-memory-log.sh" refresh --all >/dev/null 2>&1 || \
-  "$ROOT/scripts/project-memory-log.sh" workspace restore >/dev/null 2>&1 || true
-"$ROOT/scripts/project-memory-log.sh" workspace watch --duration 60 --interval 2 >/dev/null 2>&1 &
+"$ROOT/scripts/project-memory-log.sh" workspace restore >/dev/null 2>&1 || true
+"$ROOT/scripts/project-memory-log.sh" refresh --all >/dev/null 2>&1 &
 exec "$START_SCRIPT" "\$@"
 EOF
 chmod 0755 "$BIN_TARGET"
@@ -55,11 +55,7 @@ After=default.target
 
 [Service]
 Type=oneshot
-ExecStartPre=$ROOT/scripts/project-memory-log.sh backup
-ExecStart=$ROOT/scripts/project-memory-log.sh refresh --all
 ExecStart=$ROOT/scripts/project-memory-log.sh workspace restore
-ExecStart=-$ROOT/scripts/project-memory-log.sh persistence check $ROOT
-ExecStart=$ROOT/scripts/project-memory-log.sh workspace watch --duration 8 --interval 2
 
 [Install]
 WantedBy=default.target

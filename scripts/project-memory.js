@@ -5,6 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const childProcess = require('child_process');
+const crypto = require('crypto');
 
 const APP_NAME = 'linux-codex-desktop';
 const DEFAULT_DB = path.join(
@@ -34,6 +35,7 @@ function usage(exitCode = 0) {
   scripts/project-memory.js backup [--keep count]
   scripts/project-memory.js backup list
   scripts/project-memory.js backup verify [backup-dir]
+  scripts/project-memory.js backup prune-global-state [--keep count]
   scripts/project-memory.js pref get [project-root] [key]
   scripts/project-memory.js pref set [project-root] [key] [value]
   scripts/project-memory.js pref list [project-root]
@@ -216,13 +218,20 @@ function lockDir() {
 
 function withWorkspaceLock(callback) {
   const dir = lockDir();
+  const ownerPath = path.join(dir, 'owner.json');
+  const token = crypto.randomUUID();
   fs.mkdirSync(path.dirname(dir), { recursive: true });
   const deadline = Date.now() + 5000;
   while (true) {
     try {
       fs.mkdirSync(dir);
+      fs.writeFileSync(ownerPath, `${JSON.stringify({ pid: process.pid, token })}\n`, 'utf8');
       break;
     } catch (error) {
+      if (error.code === 'EEXIST' && workspaceLockIsAbandoned(dir, ownerPath)) {
+        fs.rmSync(dir, { recursive: true, force: true });
+        continue;
+      }
       if (error.code !== 'EEXIST' || Date.now() > deadline) {
         throw new Error(`could not acquire workspace state lock: ${dir}`);
       }
@@ -232,7 +241,28 @@ function withWorkspaceLock(callback) {
   try {
     return callback();
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    const owner = readJson(ownerPath);
+    if (owner && owner.pid === process.pid && owner.token === token) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+}
+
+function workspaceLockIsAbandoned(dir, ownerPath) {
+  const owner = readJson(ownerPath);
+  if (owner && Number.isInteger(owner.pid) && owner.pid > 0) {
+    try {
+      process.kill(owner.pid, 0);
+      return false;
+    } catch (error) {
+      return error.code === 'ESRCH';
+    }
+  }
+
+  try {
+    return Date.now() - fs.statSync(dir).mtimeMs > 30000;
+  } catch (error) {
+    return error.code === 'ENOENT';
   }
 }
 
@@ -594,7 +624,42 @@ function backupGlobalState(statePath) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupPath = `${statePath}.bak-${timestamp}`;
   fs.copyFileSync(statePath, backupPath);
+  pruneGlobalStateBackups(statePath, 20);
   return backupPath;
+}
+
+function pruneGlobalStateBackups(statePath, keep) {
+  const dir = path.dirname(statePath);
+  const prefix = `${path.basename(statePath)}.bak-`;
+  const backups = fs.readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.startsWith(prefix))
+    .map((entry) => path.join(dir, entry.name))
+    .sort()
+    .reverse();
+  const removed = backups.slice(keep);
+  for (const oldBackup of removed) {
+    fs.rmSync(oldBackup, { force: true });
+  }
+  return removed;
+}
+
+function writeJsonAtomically(filePath, value) {
+  const temporaryPath = `${filePath}.tmp-${process.pid}-${crypto.randomUUID()}`;
+  const mode = fs.existsSync(filePath) ? fs.statSync(filePath).mode & 0o777 : 0o600;
+  try {
+    fs.writeFileSync(temporaryPath, `${compactJson(value)}\n`, { encoding: 'utf8', mode });
+    fs.renameSync(temporaryPath, filePath);
+  } finally {
+    fs.rmSync(temporaryPath, { force: true });
+  }
+}
+
+function mergeWorkspaceRootsIntoLatestState(statePath, roots) {
+  const latest = loadGlobalState().state;
+  const current = listWorkspaceRoots(latest);
+  latest['electron-saved-workspace-roots'] = unique([...current.saved, ...roots]);
+  latest['active-workspace-roots'] = unique([...current.active, ...roots]);
+  writeJsonAtomically(statePath, latest);
 }
 
 function listWorkspaceRoots(state) {
@@ -632,8 +697,8 @@ ON CONFLICT(project_root) DO UPDATE SET
 `);
 }
 
-function registerWorkspaceRoot(dbPath, projectRoot) {
-  return withWorkspaceLock(() => registerWorkspaceRootUnlocked(dbPath, projectRoot));
+function registerWorkspaceRoot(dbPath, projectRoot, options = {}) {
+  return withWorkspaceLock(() => registerWorkspaceRootUnlocked(dbPath, projectRoot, options));
 }
 
 function registerWorkspaceRootUnlocked(dbPath, projectRoot, options = {}) {
@@ -651,9 +716,7 @@ function registerWorkspaceRootUnlocked(dbPath, projectRoot, options = {}) {
   let backupPath = null;
   if (changed) {
     backupPath = backup ? backupGlobalState(statePath) : null;
-    state['electron-saved-workspace-roots'] = saved;
-    state['active-workspace-roots'] = active;
-    fs.writeFileSync(statePath, `${compactJson(state)}\n`, 'utf8');
+    mergeWorkspaceRootsIntoLatestState(statePath, [projectRoot]);
   }
   const status = workspaceStatus(projectRoot);
   rememberWorkspaceRegistration(dbPath, projectRoot, status);
@@ -695,9 +758,7 @@ function restoreWorkspaceRootsUnlocked(dbPath, options = {}) {
   let backupPath = null;
   if (changed) {
     backupPath = backup ? backupGlobalState(statePath) : null;
-    state['electron-saved-workspace-roots'] = saved;
-    state['active-workspace-roots'] = active;
-    fs.writeFileSync(statePath, `${compactJson(state)}\n`, 'utf8');
+    mergeWorkspaceRootsIntoLatestState(statePath, roots);
   }
 
   const results = roots.map((root) => {
@@ -1386,6 +1447,13 @@ function main() {
 
   if (command === 'backup') {
     const action = process.argv[3];
+    if (action === 'prune-global-state') {
+      const options = parseBackupOptions(process.argv.slice(4));
+      const removed = pruneGlobalStateBackups(globalStatePath(), options.keep);
+      console.log(`Pruned global-state backups: ${removed.length}`);
+      console.log(`Retained global-state backups: ${options.keep}`);
+      return;
+    }
     if (action === 'list') {
       const backups = listBackups();
       if (backups.length === 0) {

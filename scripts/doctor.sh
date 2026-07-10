@@ -239,7 +239,7 @@ fi
 if [ -x "$USER_BIN_FILE" ]; then
   ok "desktop command installed -> $USER_BIN_FILE"
   if grep -q 'refresh --all' "$USER_BIN_FILE"; then
-    ok "desktop command refreshes remembered project indexes before launch"
+    ok "desktop command refreshes remembered project indexes in the background"
   else
     warn "desktop command does not refresh remembered project indexes before launch"
     printf 'fix  ./scripts/install-desktop-app.sh\n'
@@ -250,10 +250,10 @@ if [ -x "$USER_BIN_FILE" ]; then
     warn "desktop command does not restore remembered workspace roots before launch"
     printf 'fix  ./scripts/install-desktop-app.sh\n'
   fi
-  if grep -q 'workspace watch' "$USER_BIN_FILE"; then
-    ok "desktop command watches workspace roots during app startup"
+  if ! grep -q 'workspace watch' "$USER_BIN_FILE"; then
+    ok "desktop command delegates workspace monitoring to the systemd path watcher"
   else
-    warn "desktop command does not watch workspace roots during app startup"
+    warn "desktop command still runs a redundant workspace polling loop"
     printf 'fix  ./scripts/install-desktop-app.sh\n'
   fi
 else
@@ -264,14 +264,12 @@ fi
 section "Workspace Restore Service"
 if [ -f "$WORKSPACE_RESTORE_SERVICE_FILE" ]; then
   ok "workspace restore service installed -> $WORKSPACE_RESTORE_SERVICE_FILE"
-  if grep -q 'backup' "$WORKSPACE_RESTORE_SERVICE_FILE" &&
-     grep -q 'refresh --all' "$WORKSPACE_RESTORE_SERVICE_FILE" &&
-     grep -q 'workspace restore' "$WORKSPACE_RESTORE_SERVICE_FILE" &&
-     grep -q 'persistence check' "$WORKSPACE_RESTORE_SERVICE_FILE" &&
-     grep -q 'workspace watch' "$WORKSPACE_RESTORE_SERVICE_FILE"; then
-    ok "workspace restore service backs up, refreshes, restores, checks persistence, and watches remembered roots"
+  if grep -q 'workspace restore' "$WORKSPACE_RESTORE_SERVICE_FILE" &&
+     ! grep -q 'refresh --all' "$WORKSPACE_RESTORE_SERVICE_FILE" &&
+     ! grep -q 'workspace watch' "$WORKSPACE_RESTORE_SERVICE_FILE"; then
+    ok "workspace restore service performs a lightweight single restore"
   else
-    warn "workspace restore service is missing backup/refresh/restore/persistence-check/watch commands"
+    warn "workspace restore service should perform only a lightweight workspace restore"
     printf 'fix  ./scripts/install-desktop-app.sh\n'
   fi
 else

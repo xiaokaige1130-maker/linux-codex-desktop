@@ -9,9 +9,8 @@ if [ ! -x "$APP_DIR/codex-app/start.sh" ]; then
   exit 1
 fi
 
-"$ROOT/scripts/project-memory-log.sh" refresh --all >/dev/null 2>&1 || \
-  "$ROOT/scripts/project-memory-log.sh" workspace restore >/dev/null 2>&1 || true
-"$ROOT/scripts/project-memory-log.sh" workspace watch --duration 60 --interval 2 >/dev/null 2>&1 &
+"$ROOT/scripts/project-memory-log.sh" workspace restore >/dev/null 2>&1 || true
+"$ROOT/scripts/project-memory-log.sh" refresh --all >/dev/null 2>&1 &
 
 cd "$APP_DIR"
 CODEX_LINUX_ENABLE_COMPUTER_USE_UI=1 make run-app

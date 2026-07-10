@@ -1,0 +1,9 @@
+{
+  "id": "custom-model-catalog",
+  "title": "Custom Model Catalog",
+  "description": "Keeps configured custom app-server models visible in the desktop model picker.",
+  "defaultEnabled": false,
+  "entrypoints": {
+    "patchDescriptors": "./patch.js"
+  }
+}
